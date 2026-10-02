@@ -101,9 +101,7 @@ function formatSetup(player: EntityPlayer) {
 
   switch (g.race.format) {
     case RaceFormat.UNSEEDED: {
-      if (g.race.ranked && g.race.solo) {
-        formatSetupUnseededRankedSolo(player);
-      }
+      giveStartingItems(player);
 
       // The More Options buff is given in "TempMoreOptions.ts".
       break;
@@ -120,6 +118,7 @@ function formatSetup(player: EntityPlayer) {
     }
 
     case RaceFormat.CUSTOM: {
+      giveStartingItems(player);
       break;
     }
   }
@@ -128,9 +127,10 @@ function formatSetup(player: EntityPlayer) {
   sfxManager.Stop(SoundEffect.POWER_UP_SPEWER);
 }
 
-function formatSetupUnseededRankedSolo(player: EntityPlayer) {
-  // The client will populate the starting items for the current season into the "startingItems"
-  // variable.
+function giveStartingItems(player: EntityPlayer) {
+  // The client resolves "startingItems": the existing build order followed by canonical extras.
+  // Unseeded ranked solo continues to use the existing starting items for the current season.
+  // Preserve the supplied order so that seeded item pool changes remain deterministic.
   for (const startingItem of g.race.startingItems) {
     const serverCollectibleID = startingItem as ServerCollectibleID;
     const collectibleType =
@@ -151,13 +151,8 @@ function formatSetupSeeded(player: EntityPlayer) {
     addCollectibleAndRemoveFromPools(player, CollectibleType.COMPASS);
   }
 
-  // Seeded races start with an item or build (i.e. the "Instant Start" item).
-  for (const startingItem of g.race.startingItems) {
-    const serverCollectibleID = startingItem as ServerCollectibleID;
-    const collectibleType =
-      serverCollectibleIDToCollectibleType(serverCollectibleID);
-    addCollectibleAndRemoveFromPools(player, collectibleType);
-  }
+  // Seeded races start with an item or build followed by any additional starting items.
+  giveStartingItems(player);
 
   // Manually handle the Sawblade build, which grants flight from Fate but should not grant an
   // eternal heart.
